@@ -42,13 +42,16 @@ knitr::opts_knit$set(verbose=TRUE)
 require(caret)
 require(ggplot2)
 require(rattle)
+require(parallel)
 ```
 
 ## Executive summary
 
 *Scope and Objective: * This project presents a model for predicting whether or not an exercise has been done correctly, based on the work and dataset provided by @velloso2013. 
 
-A comparison has been done of several models, and accuracy calculated for each. In the end, the best model was the random forest, with an accuracy of over 99%.
+A comparison has been done of several models, and accuracy calculated for each. In the end, the most accurate model was the random forest model built with 5-fold cross validation, with an accuracy of over 99%. The out-of-sample error for this model should be somewhere around 1%.
+
+Because this is a one-off computation, I chose the more accurate (but more computationally-intensive) random forest model. If this were being run often, the gradient boosted model would probably be a better choice.
 
 ## Data loading and examination
 
@@ -64,6 +67,7 @@ We begin by loading the data from the Practical Machine Learning data repository
 # download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv", 'pml-training.csv',quiet=TRUE)
 # download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv", 'pml-testing.csv',quiet=TRUE)
 # 
+# This particular code assumes the files are in the local directory already. If not, uncomment the needed lines above.
 train_data <- read.csv('pml-training.csv')
 test_data <- read.csv('pml-testing.csv')
 ```
@@ -162,7 +166,7 @@ print(RFmod)
 print(RF_output)
 ```
 
-From this, we can see that the best accuracy is `r RF_output$overall[1]`, and it is achieved with 27 predictors. This is good, but we will continue through the other models to see if there is any improvement. Note that adding predictors causes the accuracy to drop off dramatically.
+From this, we can see that the best accuracy is `r sprintf("%1.2f%%",RF_output$overall[1]*100)`, and it is achieved with 27 predictors. This is good, but we will continue through the other models to see if there is any improvement. Note that adding predictors causes the accuracy to drop off dramatically.
 
 ### Gradient boosting
 
@@ -180,7 +184,7 @@ print(GBMmod)
 print(GBM_output)
 ```
 
-Accuracy in this case is `r GBM_output$overall[1]`. It is still very good, but not as accurate as random forest modeling. On the other hand, if computation time is an issue, this may be the better choice: This takes 10 minutes to perform, compared to nearly 35 minutes.
+Accuracy in this case is `r sprintf("%1.2f%%",GBM_output$overall[1]*100)`. It is still very good, but not as accurate as random forest modeling. On the other hand, if computation time is an issue, this may be the better choice: This takes 10 minutes to perform, compared to nearly 35 minutes.
 
 ### Classification tree
 
@@ -200,12 +204,38 @@ print(CTmod)
 print(CT_output)
 ```
 
-In this case, the accuracy is only `r CT_output$overall[1]`. Although this is by far the fastest model, it has terrible accuracy. 
+In this case, the accuracy is only `r sprintf("%1.2f%%", CT_output$overall[1]*100)`. Although this is by far the fastest model, it has terrible accuracy. It is discarded as unsuitable for our needs.
+
 ## Conclusion and final application
 
 Based on these results, the random forest model has the most accurate results, but is also the most intensive to obtain. If starting from scratch, and 96% is "accurate enough", the gradient boost model may be the appropriate choice.
 
-However, now that the random forest model has been created, apply it to our cleaned test data and print our predictions.
+### Out-of-sample errors
+
+With our RF model, we know that the in-sample error rate is `r sprintf("%1.2f%%", RF_output$overall[1]*100)`. 
+
+We can now estimate our out-of-sample error for the data set `emargsm_testing`.
+
+```{r out-of-sample}
+# Confirm the dimensions of our testing set
+dim(emargsm_testing)
+# Now use our predicted outcome to calculate the OOS error.
+length(RFpredict)
+
+# The OOS accuracy is the total number of correct predictions / total length
+outOfSample.accuracy <- sum(RFpredict == emargsm_testing$classe) / length(RFpredict)
+sprintf("%1.2f%%", outOfSample.accuracy*100)
+
+# Therefore the OOS error is 100% - oos.accuracy
+outOfSample.error <- 1 - outOfSample.accuracy
+```
+
+We can see that our out-of-sample error rate is `r sprintf("%1.2f%%", outOfSample.error*100)`.
+
+
+### Application to final test set
+
+Take our random forest model, apply it to our cleaned test data, and print our predictions.
 
 ```{r final test}
 last_prediction <- predict(RFmod, clean_test)
