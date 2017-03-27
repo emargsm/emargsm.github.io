@@ -13,7 +13,7 @@ This page contains my work for the Coursera & JHU Data Science Specialization. I
 ## Course 8: Practical Machine Learning
 ### Lectures
 ### Final Project
-* [The original Rmd file](08PML/PML-final-project.Rmd)
-* [The HTML file version](08PML/PML-final-project.html)
+   * [The original Rmd file](08PML/PML-final-project.Rmd)
+   * [The HTML file version](08PML/PML-final-project.html)
 ## Course 9: Developing Data Products (to be taken)
 ## Course 10: Data Science Capstone (to be taken)
