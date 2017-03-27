@@ -1,0 +1,215 @@
+---
+title: Predicting the quality of exercise performance based on data from wearable
+  devices
+author: "Marguerite Smith"
+date: "23 March 2017"
+output:
+  html_document: default
+  pdf_document: default
+references:
+- DOI: 10.1145/2459236.2459256
+  URL: http://groupware.les.inf.puc-rio.br/work.jsf?p1=11201
+  author:
+  - family: Velloso
+    given: Eduardo
+  - family: Bulling
+    given: Andreas
+  - family: Gellersen
+    given: Hans
+  - family: Ugulino
+    given: Wallace
+  - family: Fuks
+    given: Hugo
+  container-title: Proceedings of 4th International Conference in Cooperation with
+    SIGCHI (Augmented Human '13)
+  id: velloso2013
+  issue: 1
+  issued:
+    month: 3
+    year: 2013
+  page: 116-123
+  publisher: Association for Computing Machinery
+  title: Qualitative activity recognition of weight lifting exercises
+  type: article-journal
+  volume: 1
+---
+
+```{r setup, echo=FALSE, message=FALSE, warning=FALSE}
+# Default R markdown option
+# knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_knit$set(verbose=TRUE)
+
+require(caret)
+require(ggplot2)
+require(rattle)
+```
+
+## Executive summary
+
+*Scope and Objective: * This project presents a model for predicting whether or not an exercise has been done correctly, based on the work and dataset provided by @velloso2013. 
+
+A comparison has been done of several models, and accuracy calculated for each. In the end, the best model was the random forest, with an accuracy of over 99%.
+
+## Data loading and examination
+
+We begin by loading the data from the Practical Machine Learning data repository hosted by Cloudfront.
+
+```{r getdata}
+# This reads the training data file directly from the repository into a local variable.
+#train_data <- read.csv(url("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"), header=TRUE)
+
+# Do the same for the testing data, which will be used later.
+#test_data <- read.csv(url("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"), header=TRUE)
+
+# download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv", 'pml-training.csv',quiet=TRUE)
+# download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv", 'pml-testing.csv',quiet=TRUE)
+# 
+train_data <- read.csv('pml-training.csv')
+test_data <- read.csv('pml-testing.csv')
+```
+
+Now that we have the data, we must do an initial examination and perform any necessary tidying.
+
+```{r examine}
+dim(train_data)
+dim(test_data)
+```
+
+From this, we can see that we have a relatively robust training set of 19,622 entries on 160 different variables. The test set is much smaller, with only 20 entries. Note that the test set is reserved for use in the quiz portion of this assignment, so we will still have to partition the training set into further divisions.
+
+## Data cleaning
+
+Next, we take a quick look at the training data to see what, if any, tidying is needed.
+
+```{r strdata}
+str(train_data)
+```
+
+Several of the observations seem to be predominantly 'NA', and many are also blank. As a subjective measure, we will exclude any observation that is more than 85% NA or blank, as these will not provide quality information and may, in fact, distort the models. 
+
+In addition, we can see that the first 7 columns are unrelated to the actual physical movements. Although it is possible that time of day might have an impact on exercise execution, for this project we are focusing solely on the physical movements. 
+
+First, strip the first seven columns from the data. Next, remove any columns whose values are 85% or more NA or blank.
+
+```{r cleaning}
+# Simple first - just take away the first 7 columns.
+clean_train <- train_data[, -c(1:7)]
+
+# Now check each column and count each time an entry is NA OR blank.
+# If that number is greater than 85% of nrow(train_data), take it out.
+sum_blanks <- colSums(is.na(clean_train) | clean_train=="") 
+threshold <- .85 * nrow(clean_train)
+remove_these <- which(sum_blanks > threshold)
+clean_train <- clean_train[, -remove_these]
+# dim(clean_train)
+```
+
+Now we are dealing with only 53 columns of data, rather than the original 160. Perform the same cleaning on the test data.
+
+```{r cleaning2}
+# Simple first - just take away the first 7 columns.
+clean_test <- test_data[, -c(1:7)]
+
+# Reuse the same removed columns as above. Don't recalculate.
+clean_test <- clean_test[, -remove_these]
+# dim(clean_test)
+```
+
+## Training and test set creation
+
+As mentioned above, the file $pml-testing.csv$ will actually be used for a separate validation exercise, so we must create our own training and testing subdivisions of the $pml-training.csv$ set.
+
+```{r traintest}
+# Take 80% of the set to use as our training subset, and leave 20% for testing. Remember that 'classe' is our outcome variable. Keep the results as a matrix.
+# Be sure to set a seed for reproducability.
+set.seed(4747)
+emargsm_intrain <- createDataPartition(clean_train$classe, p=0.8, list=FALSE)
+emargsm_training <- clean_train[emargsm_intrain,]
+emargsm_testing <- clean_train[-emargsm_intrain,]
+```
+
+## Initial modelling
+
+Now that we have our cleaned data sets, we can begin our modelling.
+
+We will compare three different types of models covered in the PML course: random forest, gradient boosting, and classification tree. As also discussed in PML, we'll use k-fold cross-validation to improve our model evaluation. To do this, we will take advantage of the parameter `trControl = trainControl()` within `caret::train()`.
+
+```{r traincontrol}
+# By default, trainControl() uses the "boot" method.
+# When we switch it to "cv" for cross-validation, the default
+# number of folds is 10 and the number of repeats is 1.
+# Note that 10 folds are incredibly computationally intensive.
+# (As an example, RF processing time is > 1 hr on this laptop.)
+# 10-fold accuracy: 0.9939 
+# 5-fold accuracy: 0.9929
+# For no significant difference in the output and half the processing
+# time, use 5-fold CV.
+TC <- trainControl(method = "cv", number = 5)
+```
+
+### Random forest
+
+We build a random forest model on our training subset and then predict against our testing subset. Use a confusion matrix to compare our prediction to the actual outcomes.
+
+```{r random forest}
+RFmod <- train(classe ~ ., method = "rf", data = emargsm_training, trControl = TC)
+
+RFpredict <- predict(RFmod,emargsm_testing)
+
+RF_output <- confusionMatrix(RFpredict, emargsm_testing$classe)
+plot(RFmod, main="Random Forest prediction")
+print(RFmod)
+print(RF_output)
+```
+
+From this, we can see that the best accuracy is `r RF_output$overall[1]`, and it is achieved with 27 predictors. This is good, but we will continue through the other models to see if there is any improvement. Note that adding predictors causes the accuracy to drop off dramatically.
+
+### Gradient boosting
+
+Next comes gradient boosting. Repeat the same steps as above.
+
+```{r Gradient Boosting}
+GBMmod <- train(classe ~ ., method = "gbm", data = emargsm_training, trControl = TC, verbose = FALSE)
+
+GBMpredict <- predict(GBMmod,emargsm_testing)
+
+GBM_output <- confusionMatrix(GBMpredict, emargsm_testing$classe)
+print(GBM_output)
+plot(GBMmod, main="Random Forest prediction")
+print(GBMmod)
+print(GBM_output)
+```
+
+Accuracy in this case is `r GBM_output$overall[1]`. It is still very good, but not as accurate as random forest modeling. On the other hand, if computation time is an issue, this may be the better choice: This takes 10 minutes to perform, compared to nearly 35 minutes.
+
+### Classification tree
+
+Finally, repeat the steps with a classification tree.
+
+```{r Classification Tree}
+CTmod <- train(classe ~ ., method = "rpart", data = emargsm_training, trControl = TC)
+
+CTpredict <- predict(CTmod, emargsm_testing)
+
+CT_output <- confusionMatrix(CTpredict, emargsm_testing$classe)
+# plot(CTmod)
+# Instead of using the basic plot, use the fancy tree plot shown
+# in this week's lectures.
+fancyRpartPlot(CTmod$finalModel)
+print(CTmod)
+print(CT_output)
+```
+
+In this case, the accuracy is only `r CT_output$overall[1]`. Although this is by far the fastest model, it has terrible accuracy. 
+## Conclusion and final application
+
+Based on these results, the random forest model has the most accurate results, but is also the most intensive to obtain. If starting from scratch, and 96% is "accurate enough", the gradient boost model may be the appropriate choice.
+
+However, now that the random forest model has been created, apply it to our cleaned test data and print our predictions.
+
+```{r final test}
+last_prediction <- predict(RFmod, clean_test)
+print(last_prediction)
+```
+
+# Bibliography

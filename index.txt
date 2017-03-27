@@ -1,0 +1,10 @@
+<!DOCTYPE html>
+<html>
+<body>
+<h1>Coursera Work</h1>
+<p>On this page, you can find the following work that I’ve done for the Coursera + JHU Data Science certification.</p>
+<ul>
+<li><a href=“PML-final-project.html”>Practical Machine Learning: Final Project</a></li>
+</ul>
+</body>
+</html>
