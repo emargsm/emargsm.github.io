@@ -3,9 +3,17 @@ Marguerite's GitHub page
 
 This page contains my work for the Coursera & JHU Data Science Specialization. I will continue to upload my past work here as time permits.
 
-# practical-machine-learning
-Repository for the Coursera &amp; JHU Practical Machine Learning final project
-
-[The original Rmd file](PML-final-project.Rmd)
-
-[The HTML file version](PML-final-project.html)
+## Course 1: The Data Scientist's Toolbox
+## Course 2: R Programming
+## Course 3: Getting and Cleaning Data
+## Course 4: Exploratory Data Analysis
+## Course 5: Reproducible Research
+## Course 6: Statistical Inference
+## Course 7: Regression Models
+## Course 8: Practical Machine Learning
+### Lectures
+### Final Project
+* [The original Rmd file](08PML/PML-final-project.Rmd)
+* [The HTML file version](08PML/PML-final-project.html)
+## Course 9: Developing Data Products (to be taken)
+## Course 10: Data Science Capstone (to be taken)
