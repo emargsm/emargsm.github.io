@@ -1,0 +1,156 @@
+---
+title: "Data Products"
+author: "Marguerite Smith"
+date: "30 March 2017"
+output: html_document
+runtime: shiny
+---
+
+```{r setup, echo=FALSE}
+knitr::opts_knit$set(progress = TRUE, verbose = TRUE)
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r fullcode, echo=FALSE, warning=FALSE, error=FALSE, message=FALSE}
+require(twitteR)
+require(data.table)
+require(leaflet)
+require(ggmap)
+require(httr)
+
+########  Setting up the Twitter search call
+
+# Declare Twitter API Credentials
+appname <- "map_puppers"
+api_key <- "gRzJTRnB4XqFWQfMVa9YroTqx"
+api_secret <- "OynCqPjaaDL1sq6BPzpyTeLpzB2xGJtvdx7GgYW9y103nnYWT9"
+token <- "16111017-NN8C0KYMwZIhdjdyENncEd04E3UNVi3gMlDM5zRWi" # From dev.twitter.com
+token_secret <- "CH9KQceKPcULfw8iWcxVNSvptCGfGnaNo6nHLy2LxBEzU" # From dev.twitter.com
+
+# Create Twitter Connection
+setup_twitter_oauth(api_key, api_secret, token, token_secret)
+
+
+getTweets <- function(numTweets) {
+      print(paste("Getting up to",numTweets,"images."))
+      tweets_raw <- userTimeline('dogwatisaw', n = numTweets*2,
+                                 includeRts = FALSE, excludeReplies = TRUE)
+      tweets.df <- twListToDF(tweets_raw)
+      drawings <- tweets.df[grep(" https://t.co/",tweets.df$text),]
+      if(nrow(drawings) > numTweets) {
+            drawings <- drawings[1:numTweets,]
+      }
+      print(paste("Results count:",nrow(drawings)))
+      print(drawings$text)
+      return(drawings)
+}
+
+
+
+mapTweets <- function(drawings) {
+      ###### Start by processing the tweets
+
+      drawings$description <- gsub("(^.*)( -.*$)", "\\1", x=drawings$text)
+      # print(drawings$description)
+      drawings$image <- paste("https://", 
+                              gsub("(^.*https://)(.*$)", 
+                              "\\2", x=drawings$text), 
+                              sep="")
+      drawings$location <- gsub(
+        "(.* - )([[:digit:]]+:?[[:digit:]]*[[AaPp]m]? ?)?(.*)( https:.*$)",
+        "\\3",x=drawings$text)
+      
+      # Many thanks to https://regex101.com/ for making it easier to sort that out!
+      print(drawings$location)
+      
+      embeds <- data.frame("body" = character())
+      
+      for(id in drawings$id) {
+            twiturl <- paste("https://publish.twitter.com/oembed?url=https%3A%2f%2ftwitter.com%2fdogwatisaw%2fstatus%2f",id,sep="")
+            newurl <- as.character(content(GET(twiturl))$html)
+            embeds <- rbind(embeds, data.frame(body = newurl))
+      }
+      
+      # The URL for the script is actually incorrect - try adding in https://
+      # Original: <script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+      # Want: <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+      
+      #embeds$body <- gsub('src="//platform', 'src="https://platform', embeds$body)
+
+      ######## Making the lat/long table
+
+      puppers_latlong <- data.frame("lat" = numeric(), "lng" = numeric())
+      for(loc in drawings$location) {
+        loc <- paste0(loc, ", Gothenburg, Sweden")
+        geo_reply = geocode(loc, output='all', messaging=TRUE, override_limit=TRUE)
+      
+          this_lat <- geo_reply$results[[1]]$geometry$location$lat
+          this_lng <- geo_reply$results[[1]]$geometry$location$lng
+      
+        new_coords <- data.frame( "lat" = this_lat, "lng" = this_lng)
+        puppers_latlong <- rbind(puppers_latlong, new_coords)
+      }
+      
+      
+      ######## Making our markers
+      
+      puppers_popups <- embeds$body
+      #print(puppers_popups)
+      
+      map <- 
+            puppers_latlong %>%
+            leaflet() %>%
+            setView(lat = 57.6987865, lng = 11.9745282, zoom=12) %>%
+            addTiles() %>%
+            addMarkers(popup = puppers_popups, 
+                       clusterOptions = markerClusterOptions())
+      return(map)
+}
+```
+
+## Map_puppers
+### 30 March 2017
+
+The Twitter feed [@dogwatisaw](https://www.twitter.com/dogwatisaw) is a fun feed where the poster notices dogs around town, draws them from memory later, and then posts the pictures along with a short description.
+
+This is a very basic webpage that does the following through R:
+
+* Reads up to the last 20 tweets from the Twitter user @dogwatisaw, excluding replies and retweets
+* Retains only the tweets containing pictures, as defined by having an https://t.co/ link in them
+* Parses the body of the text to get the following:
+    + The location
+    + The t.co link
+    + The tweet ID
+* Uses the tweet ID and Twitter's Publish API to get the embeddable code
+* Uses the text location and Google's geolocate to get an approximate latitude and longitude
+* Uses leaflet() to plot the sightings and puts the embedded tweet in the popup
+
+## The pupper map
+
+
+```{r echo=FALSE}
+shinyApp(
+      ui = fluidPage(
+            titlePanel("Dogs in Gothenburg"),
+            sidebarLayout(
+                  sidebarPanel(
+                        selectInput("numTweets", 
+                                 label="How many tweets to display?", 1:20
+                                 #, selected=17),
+                        ),
+                        submitButton("Map the pups!"),
+                        textOutput("numOutput")
+                        ),
+                  mainPanel(leafletOutput('puppers', height = 350))
+            )
+      ),
+      server = function(input, output) {
+            output$puppers <- renderLeaflet(
+                  mapTweets(
+                        getTweets(as.numeric(input$numTweets))
+                  )
+            )
+      }
+
+)
+```
