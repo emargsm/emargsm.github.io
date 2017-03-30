@@ -15,5 +15,7 @@ This page contains my work for the Coursera & JHU Data Science Specialization. I
 ### Final Project
    * [The original Rmd file](08PML/PML-final-project.Rmd)
    * [The HTML file version](08PML/PML-final-project.html)
-## Course 9: Developing Data Products (to be taken)
+## Course 9: Developing Data Products
+### Projects
+   * [The Rmd of the project for week 2](09DDP/map_puppers.Rmd)
 ## Course 10: Data Science Capstone (to be taken)
