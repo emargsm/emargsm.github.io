@@ -19,5 +19,8 @@ This page contains my work for the Coursera & JHU Data Science Specialization. I
 ## Course 9: Developing Data Products
 ### Projects
    * [The Rmd of the project for week 2](09DDP/map_puppers.Rmd)
+   * [The Slidify pitch for week 4](09DDP/slidify/index.html)
+   * [The server.R file](09DDP/server.R)
+   * [The ui.R file](09DDP/ui.R)
    
 ## Course 10: Data Science Capstone (to be taken)
