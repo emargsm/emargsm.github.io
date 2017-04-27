@@ -20,11 +20,11 @@ This page contains my work for the Coursera & JHU Data Science Specialization. I
 ### Projects
    * [The Rmd of the project for week 2](09DDP/map_puppers.Rmd)
    
-   * [The Slidify pitch for week 4](09DDP/slidify/index.html)
-   * [The server.R file for week 4](09DDP/server.R)
-   * [The ui.R file file for week 4](09DDP/ui.R)
-      + See also [the doggomap repository itself](https://github.com/emargsm/doggomap). This is what the pitch links to.
-   
-   * [The actual Shiny app: Doggo map!](https://emargsm.shinyapps.io/doggomap/)
+   * Everything for week 4
+      + [The Slidify pitch for week 4](09DDP/slidify/index.html)
+      + [The server.R file for week 4](09DDP/server.R)
+      + [The ui.R file file for week 4](09DDP/ui.R)
+         + See also [the doggomap repository itself](https://github.com/emargsm/doggomap). This is the version of server.R and ui.R that the pitch links to.
+      + [The actual Shiny app: Doggo map!](https://emargsm.shinyapps.io/doggomap/)
    
 ## Course 10: Data Science Capstone (to be taken)
