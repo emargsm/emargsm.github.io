@@ -23,7 +23,7 @@ This page contains my work for the Coursera & JHU Data Science Specialization. I
    * [The Slidify pitch for week 4](09DDP/slidify/index.html)
    * [The server.R file for week 4](09DDP/server.R)
    * [The ui.R file file for week 4](09DDP/ui.R)
-    + (See also [the doggomap repository itself](https://github.com/emargsm/doggomap). This is what the pitch links to.)
+      + See also [the doggomap repository itself](https://github.com/emargsm/doggomap). This is what the pitch links to.
    
    * [The actual Shiny app: Doggo map!](https://emargsm.shinyapps.io/doggomap/)
    
