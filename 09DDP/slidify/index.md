@@ -96,7 +96,7 @@ In my Shiny app, I parse and map a pre-cleaned CSV file containing approximately
 <div class="left">
 This is a sample of the output from the application, mapping 10 tweets from the dataset. 
 
-It does not include the app's full UI, which is found [in the application itself](https://emargsm.shinyapps.io/doggomap).
+It does not include the app's full UI, which is found <a href="https://emargsm.shinyapps.io/doggomap/">in the application itself</a>.
 </div>
 <div class="right">
 
