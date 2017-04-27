@@ -1,0 +1,14 @@
+base
+sp
+slidify
+slidifyLibraries
+shiny
+ggplot2
+plotly
+tidyr
+dplyr
+devtools
+XML
+leaflet
+htmlwidgets
+knitr
